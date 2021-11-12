@@ -1,5 +1,5 @@
 {
-    "index_patterns": ["gravitee-log-*"],
+    "index_patterns": ["gravitee-log*"],
     "settings": {
         "index.number_of_shards": 1,
         "index.number_of_replicas": 1,
