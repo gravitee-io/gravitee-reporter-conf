@@ -1,0 +1,9 @@
+filebeat.inputs:
+  - type: log
+    enabled: true
+    paths:
+      - ${report_path}/*.json
+    scan_frequency: 1s
+
+output.logstash:
+  hosts: ["logstash:5044"]
