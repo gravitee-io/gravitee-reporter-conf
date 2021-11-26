@@ -1,4 +1,9 @@
 version: '3.3'
+
+networks:
+  es_newtwork:
+      name: es_network
+
 services:
   elasticsearch:
     container_name: elasticsearch
@@ -16,7 +21,8 @@ services:
       - 9300:9300
     stdin_open: true
     tty: true
-    network_mode: bridge
+    networks:
+      - es_newtwork
     logging:
       driver: "json-file"
       options:
@@ -37,7 +43,8 @@ services:
       - elasticsearch
     stdin_open: true
     tty: true
-    network_mode: bridge
+    networks:
+      - es_newtwork
     logging:
       driver: "json-file"
       options:
@@ -62,7 +69,8 @@ services:
       - elasticsearch
     stdin_open: true
     tty: true
-    network_mode: bridge
+    networks:
+      - es_newtwork
     environment:
       - report_path=/usr/share/gravitee/logs
       - templates_path=/usr/share/logstash/templates
@@ -93,7 +101,8 @@ services:
         hard: -1
     stdin_open: true
     tty: true
-    network_mode: bridge
+    networks:
+      - es_newtwork
     deploy:
       mode: global
     logging:
