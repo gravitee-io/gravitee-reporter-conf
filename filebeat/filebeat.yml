@@ -3,7 +3,9 @@ filebeat.inputs:
     enabled: true
     paths:
       - ${report_path}/*.json
-    scan_frequency: 1s
+    # important to configure the json mode and recover filebeat errors
+    json.add_error_key: true
+    tags: ["gravitee_json"]
 
 output.logstash:
   hosts: ["logstash:5044"]
