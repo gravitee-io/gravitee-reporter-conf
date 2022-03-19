@@ -1,0 +1,59 @@
+gateway:
+  enabled: true
+  ingress:
+    enabled: true
+    path: /
+    hosts:
+    - gw.gravitee.io
+    annotations:
+      kubernetes.io/ingress.class: nginx
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      nginx.ingress.kubernetes.io/enable-rewrite-log: "true"
+      nginx.ingress.kubernetes.io/configuration-snippet: "etag on;\nproxy_pass_header ETag;\nproxy_set_header if-match \"\";\n"
+    tls:
+    - hosts:
+      - gw.gravitee.io
+      secretName: gw-gravitee
+  services:
+    core:
+      http:
+        enabled: true
+        host: 0.0.0.0
+        authentication:
+          type: none
+    metrics:
+      enabled: true
+  reporters:
+    elasticsearch:
+      enabled: true
+    file:
+      enabled: true
+  resources:
+    limits:
+      cpu: 256m
+      memory: 256Mi
+    requests:
+      cpu: 256m
+      memory: 256Mi
+  extraVolumeMounts: |
+    - name: shared-data
+      mountPath: /opt/graviteeio-gateway/metrics
+  extraVolumes: |
+    - name: shared-data
+      emptyDir: {}
+  extraContainers: |
+    - name: splunk-uf
+      image: splunk/universalforwarder:latest
+      imagePullPolicy: Always
+      env:
+      - name: SPLUNK_START_ARGS
+        value: "--accept-license"
+      - name: SPLUNK_PASSWORD
+        value: "<your chosen Splunk password>"
+      - name: SPLUNK_CMD
+        value: add monitor /var/log/
+      - name: SPLUNK_STANDALONE_URL
+        value: <splunk server service name>
+      volumeMounts:
+      - name: shared-data
+        mountPath: /var/log

@@ -1,0 +1,132 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "3"
+    meta.helm.sh/release-name: graviteeio-apim3
+    meta.helm.sh/release-namespace: graviteeio
+  name: splunk-server
+  namespace: graviteeio
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: splunk
+      app.kubernetes.io/name: splunk-server
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: splunk
+        app.kubernetes.io/name: splunk-server
+    spec:
+      containers:
+      - env:
+        - name: SPLUNK_PASSWORD
+          value: <password that will be set for the admin user>
+        - name: SPLUNK_START_ARGS
+          value: --accept-license
+        - name: SPLUNK_HEC_TOKEN
+          value: <HTTP Event Collector token here>
+        image: splunk/splunk:latest
+        imagePullPolicy: Always
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /
+            port: 8000
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 60
+          successThreshold: 1
+          timeoutSeconds: 1
+        name: splunk-server
+        ports:
+        - containerPort: 8000
+          name: http
+          protocol: TCP
+        - containerPort: 8065
+          name: value-store1
+          protocol: TCP
+        - containerPort: 8088
+          protocol: TCP
+          name: hforwarder
+        - containerPort: 8089
+          name: splunkd
+          protocol: TCP
+        - containerPort: 8191
+          name: value-store2
+          protocol: TCP
+        - containerPort: 9887
+          protocol: TCP
+          name: cluster
+        - containerPort: 9997
+          name: forwarder
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /
+            port: 8000
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 60
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources:
+          limits:
+            cpu: 500m
+            memory: 1Gi
+          requests:
+            cpu: 10m
+            memory: 500Mi
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/component: splunk
+    app.kubernetes.io/name: splunk-server
+  name: splunk-server
+  namespace: graviteeio
+spec:
+  ports:
+  - name: http
+    port: 8000
+    protocol: TCP
+    targetPort: 8000
+  - name: value-store1
+    port: 8065
+    protocol: TCP
+    targetPort: 8065
+  - name: hforwarder
+    port: 8088
+    protocol: TCP
+    targetPort: 8088
+  - name: mapi
+    port: 8089
+    protocol: TCP
+    targetPort: 8089
+  - name: value-store2
+    port: 8191
+    protocol: TCP
+    targetPort: 8191
+  - name: cluster
+    port: 9887
+    protocol: TCP
+    targetPort: 9887
+  - name: forwarder
+    port: 9997
+    protocol: TCP
+    targetPort: 9997
+  selector:
+    app.kubernetes.io/component: splunk
+    app.kubernetes.io/name: splunk-server
+  sessionAffinity: None
+  type: ClusterIP
