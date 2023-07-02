@@ -1,4 +1,0 @@
-elasticsearch_version=6.8.20
-gravitee_templates_path=./logstash/templates/6.x
-gravitee_conf_file=./logstash/conf/6.x/logstash-file.conf
-gravitee_report_path=/tmp/gravitee-logs
