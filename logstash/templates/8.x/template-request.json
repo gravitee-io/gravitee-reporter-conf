@@ -1,12 +1,12 @@
 {
     "index_patterns": ["gravitee-request*"],
-    "settings": {
-        "index.number_of_shards": 1,
-        "index.number_of_replicas": 1,
-        "index.refresh_interval": "5s"
-    },
-    "mappings": {
-        "request": {
+    "template": {
+        "settings": {
+            "index.number_of_shards": 1,
+            "index.number_of_replicas": 1,
+            "index.refresh_interval": "5s"
+        },
+        "mappings": {
             "properties": {
                 "@timestamp": {
                     "type": "date"
@@ -15,7 +15,7 @@
                     "type": "keyword"
                 },
                 "api-response-time": {
-                    "type": "integer"
+                    "type": "long"
                 },
                 "application": {
                     "type": "keyword"
@@ -45,21 +45,21 @@
                 "remote-address": {
                     "type": "ip"
                 },
-                "geoip" : {
+                "geoip": {
                     "properties": {
-                        "continent_name":{
+                        "continent_name": {
                             "type": "keyword",
                             "index": true
                         },
-                        "country_iso_code":{
+                        "country_iso_code": {
                             "type": "keyword",
                             "index": true
                         },
-                        "region_name":{
+                        "region_name": {
                             "type": "keyword",
                             "index": true
                         },
-                        "city_name":{
+                        "city_name": {
                             "type": "keyword",
                             "index": true
                         },
@@ -105,12 +105,34 @@
                 },
                 "user_agent": {
                     "properties": {
+                        "device": {
+                            "properties": {
+                                "name": {
+                                    "type": "keyword"
+                                }
+                            }
+                        },
                         "name": {
                             "type": "keyword",
                             "index": true
                         },
                         "original": {
                             "type": "text"
+                        },
+                        "os": {
+                            "properties": {
+                                "full": {
+                                    "type": "text"
+                                },
+                                "name": {
+                                    "type": "keyword",
+                                    "index": true
+                                },
+                                "version": {
+                                    "type": "keyword",
+                                    "index": true
+                                }
+                            }
                         },
                         "os_name": {
                             "type": "keyword",
@@ -138,8 +160,22 @@
                 },
                 "subscription": {
                     "type": "keyword"
+                },
+                "zone": {
+                    "type": "keyword"
                 }
-            }
+            },
+            "dynamic_templates": [
+                {
+                    "strings_as_keywords": {
+                        "path_match": "custom.*",
+                        "match_mapping_type": "string",
+                        "mapping": {
+                            "type": "keyword"
+                        }
+                    }
+                }
+            ]
         }
     }
 }

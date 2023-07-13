@@ -1,12 +1,12 @@
 {
     "index_patterns": ["gravitee-monitor*"],
-    "settings": {
-        "index.number_of_shards": 1,
-        "index.number_of_replicas": 1,
-        "index.refresh_interval": "5s"
-    },
-    "mappings": {
-        "monitor": {
+    "template": {
+        "settings": {
+            "index.number_of_shards": 1,
+            "index.number_of_replicas": 1,
+            "index.refresh_interval": "5s"
+        },
+        "mappings": {
             "properties": {
                 "os": {
                     "properties": {

@@ -1,0 +1,142 @@
+#
+# Copyright (C) 2015 The Gravitee team (http://gravitee.io)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+version: '3.5'
+
+networks:
+  frontend:
+    name: frontend
+  storage:
+    name: storage
+
+volumes:
+  data-elasticsearch:
+  data-mongo:
+
+services:
+  mongodb:
+    image: mongo:${MONGODB_VERSION:-4.4}
+    container_name: mongodb
+    restart: always
+    volumes:
+      - data-mongo:/data/db
+      - ./logs/apim-mongodb:/var/log/mongodb
+    networks:
+      - storage
+    ports:
+      - "27017:27017"
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_VERSION}
+    container_name: elasticsearch
+    restart: always
+    volumes:
+      - data-elasticsearch:/usr/share/elasticsearch/data
+    environment:
+      - http.host=0.0.0.0
+      - transport.host=0.0.0.0
+      - xpack.security.enabled=false
+      - cluster.name=elasticsearch
+      - bootstrap.memory_lock=true
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile: 65536
+    networks:
+      - storage
+    ports:
+      - "9200:9200"
+
+  logstash:
+    container_name: logstash
+    image: logstash:${ELASTIC_VERSION}
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - ../logstash/conf/default/logstash-file.conf:/usr/share/logstash/pipeline/logstash.conf
+      - ../logstash/templates/${ELASTIC_MAJOR_VERSION}.x:/usr/share/logstash/templates
+      - ./metrics:/usr/share/gravitee/metrics
+    links:
+      - elasticsearch:elasticsearch
+    depends_on:
+      - elasticsearch
+    stdin_open: true
+    tty: true
+    networks:
+      - storage
+    environment:
+      - report_path=/usr/share/gravitee/metrics
+      - templates_path=/usr/share/logstash/templates
+
+  gateway:
+    image: graviteeio/apim-gateway:${APIM_VERSION:-3}
+    container_name: gateway
+    restart: always
+    ports:
+      - "8082:8082"
+    depends_on:
+      - mongodb
+      - elasticsearch
+    volumes:
+      - ./logs/apim-gateway:/opt/graviteeio-gateway/logs
+      - ./metrics:/opt/graviteeio-gateway/metrics
+    environment:
+      - gravitee_management_mongodb_uri=mongodb://mongodb:27017/gravitee?serverSelectionTimeoutMS=5000&connectTimeoutMS=5000&socketTimeoutMS=5000
+      - gravitee_ratelimit_mongodb_uri=mongodb://mongodb:27017/gravitee?serverSelectionTimeoutMS=5000&connectTimeoutMS=5000&socketTimeoutMS=5000
+      - gravitee_reporters_elasticsearch_enabled=false
+      - gravitee_reporters_file_enabled=true
+      - gravitee_reporters_file_output=elasticsearch
+    networks:
+      - storage
+      - frontend
+
+  management_api:
+    image: graviteeio/apim-management-api:${APIM_VERSION:-3}
+    container_name: management_api
+    restart: always
+    ports:
+      - "8083:8083"
+    links:
+      - mongodb
+      - elasticsearch
+    depends_on:
+      - mongodb
+      - elasticsearch
+    volumes:
+      - ./logs/apim-management-api:/opt/graviteeio-management-api/logs
+    environment:
+      - gravitee_management_mongodb_uri=mongodb://mongodb:27017/gravitee?serverSelectionTimeoutMS=5000&connectTimeoutMS=5000&socketTimeoutMS=5000
+      - gravitee_analytics_elasticsearch_endpoints_0=http://elasticsearch:9200
+    networks:
+      - storage
+      - frontend
+
+  management_ui:
+    image: graviteeio/apim-management-ui:${APIM_VERSION:-3}
+    container_name: management_ui
+    restart: always
+    ports:
+      - "8084:8080"
+    environment:
+      - MGMT_API_URL=http://localhost:8083/management/organizations/DEFAULT/environments/DEFAULT/
+    volumes:
+      - ./logs/apim-management-ui:/var/log/nginx
+    networks:
+      - frontend
