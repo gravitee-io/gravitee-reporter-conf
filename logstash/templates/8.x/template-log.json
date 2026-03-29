@@ -4,7 +4,16 @@
         "settings": {
             "index.number_of_shards": 1,
             "index.number_of_replicas": 1,
-            "index.refresh_interval": "5s"
+            "index.refresh_interval": "5s",
+            "analysis": {
+                "analyzer": {
+                    "gravitee_body_analyzer": {
+                        "type": "custom",
+                        "tokenizer": "whitespace",
+                        "filter": ["lowercase"]
+                    }
+                }
+            }
         },
         "mappings": {
             "properties": {
